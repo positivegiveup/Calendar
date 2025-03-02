@@ -152,7 +152,7 @@ function GroupPanel({ onMemberSelect }) {
                 className="group-panel-header" 
                 onClick={() => setIsPanelExpanded(!isPanelExpanded)}
             >
-                <h2>群組管理 {isPanelExpanded ? '▲' : '▼'}</h2>
+                <h2>群組 {isPanelExpanded ? '▲' : '▼'}</h2>
             </div>
 
             <div className={`group-panel-content ${isPanelExpanded ? 'expanded' : ''}`}>
