@@ -1,5 +1,5 @@
 // Header.js
-import { Menu, Search, Button, Modal, Input } from 'semantic-ui-react';
+import { Menu, Button, Modal, Input } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 import { auth, db } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
@@ -63,9 +63,6 @@ function Header() {
             <Menu>
                 <Menu.Item as={Link} to="/">
                     Calendar
-                </Menu.Item>
-                <Menu.Item>
-                    <Search />
                 </Menu.Item>
                 <Menu.Menu position="right">
                     {!user ? (
