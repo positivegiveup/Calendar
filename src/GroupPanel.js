@@ -17,6 +17,7 @@ function GroupPanel({ onMemberSelect }) {
     const [isCreateGroupExpanded, setIsCreateGroupExpanded] = useState(false);
     const [newGroupName, setNewGroupName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isPanelExpanded, setIsPanelExpanded] = useState(false);
 
     useEffect(() => {
         if (auth.currentUser) {
@@ -147,75 +148,64 @@ function GroupPanel({ onMemberSelect }) {
 
     return (
         <div className="group-panel">
-            <h2>群組管理</h2>
-            {isLoading && <div className="loading">加載中...</div>}
-            {error && <div className="error-message">{error}</div>}
-            {success && <div className="success-message">{success}</div>}
-
-            <div className="group-section">
-                <h3 onClick={toggleJoinGroupExpansion} style={{ cursor: 'pointer' }}>
-                    加入群組 {isJoinGroupExpanded ? ' ▲' : ' ▼'}
-                </h3>
-                {isJoinGroupExpanded && (
-                    <form onSubmit={joinGroup}>
-                        <input
-                            type="text"
-                            value={joinGroupCode}
-                            onChange={(e) => setJoinGroupCode(e.target.value)}
-                            placeholder="輸入群組代碼"
-                        />
-                        <button type="submit" disabled={isLoading}>加入群組</button>
-                    </form>
-                )}
+            <div 
+                className="group-panel-header" 
+                onClick={() => setIsPanelExpanded(!isPanelExpanded)}
+            >
+                <h2>群組管理 {isPanelExpanded ? '▲' : '▼'}</h2>
             </div>
-            
-            {/*
-            <div className="group-section">
-                <h3 onClick={toggleCreateGroupExpansion} style={{ cursor: 'pointer' }}>
-                    創建新群組 {isCreateGroupExpanded ? ' ▲' : ' ▼'}
-                </h3>
-                {isCreateGroupExpanded && (
-                    <form onSubmit={createGroup}>
-                        <input
-                            type="text"
-                            value={newGroupName}
-                            onChange={(e) => setNewGroupName(e.target.value)}
-                            placeholder="輸入新群組名稱"
-                        />
-                        <button type="submit" disabled={isLoading}>創建群組</button>
-                    </form>
-                )}
-            </div>
-            */}
 
-            <div className="group-section">
-                <h3>我的群組</h3>
-                <div className="group-list">
-                    {userGroups.length > 0 ? (
-                        userGroups.map(group => (
-                            <div key={group} className="group-item">
-                                <div onClick={() => toggleGroupExpand(group)} style={{ cursor: 'pointer' }}>
-                                    {group} ({groupMembersCount[group] || 0} 人)
-                                    {expandedGroup === group ? ' ▲' : ' ▼'}
-                                </div>
-                                {expandedGroup === group && (
-                                    <div className="group-members">
-                                        {Object.entries(groupMembersData[group] || {}).map(([memberId, nickname]) => (
-                                            <div
-                                                key={memberId}
-                                                className="group-member"
-                                                onClick={() => handleMemberClick(memberId)}
-                                            >
-                                                {nickname} {/* 顯示暱稱 */}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        ))
-                    ) : (
-                        <p>尚未加入任何群組</p>
+            <div className={`group-panel-content ${isPanelExpanded ? 'expanded' : ''}`}>
+                {isLoading && <div className="loading">加載中...</div>}
+                {error && <div className="error-message">{error}</div>}
+                {success && <div className="success-message">{success}</div>}
+
+                <div className="group-section">
+                    <h3 onClick={toggleJoinGroupExpansion} style={{ cursor: 'pointer' }}>
+                        加入群組 {isJoinGroupExpanded ? '▲' : '▼'}
+                    </h3>
+                    {isJoinGroupExpanded && (
+                        <form onSubmit={joinGroup}>
+                            <input
+                                type="text"
+                                value={joinGroupCode}
+                                onChange={(e) => setJoinGroupCode(e.target.value)}
+                                placeholder="輸入群組代碼"
+                            />
+                            <button type="submit" disabled={isLoading}>加入群組</button>
+                        </form>
                     )}
+                </div>
+
+                <div className="group-section">
+                    <h3>我的群組</h3>
+                    <div className="group-list">
+                        {userGroups.length > 0 ? (
+                            userGroups.map(group => (
+                                <div key={group} className="group-item">
+                                    <div onClick={() => toggleGroupExpand(group)} style={{ cursor: 'pointer' }}>
+                                        {group} ({groupMembersCount[group] || 0} 人)
+                                        {expandedGroup === group ? '▲' : '▼'}
+                                    </div>
+                                    {expandedGroup === group && (
+                                        <div className="group-members">
+                                            {Object.entries(groupMembersData[group] || {}).map(([memberId, nickname]) => (
+                                                <div
+                                                    key={memberId}
+                                                    className="group-member"
+                                                    onClick={() => handleMemberClick(memberId)}
+                                                >
+                                                    {nickname}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))
+                        ) : (
+                            <p>尚未加入任何群組</p>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

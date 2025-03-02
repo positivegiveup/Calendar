@@ -1,9 +1,35 @@
 /* GroupPanel.css */
 .group-panel {
     background: white;
-    padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 300px;
+    margin-right: 20px;
+}
+
+.group-panel-header {
+    padding: 15px 20px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.group-panel-header h2 {
+    margin: 0;
+    font-size: 1.2em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.group-panel-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.group-panel-content.expanded {
+    max-height: 2000px; /* 或其他適當的值 */
+    padding: 20px;
 }
 
 .group-section {
@@ -101,10 +127,11 @@
 }
 
 /* Mobile styles */
-@media screen and (max-width: 767px) {
+@media screen and (max-width: 768px) {
     .group-panel {
         width: 100%;
-        margin: 0 0 20px 0;
+        margin-right: 0;
+        margin-bottom: 20px;
     }
     
     .main-content {
@@ -128,5 +155,9 @@
     
     .group-member {
         padding: 4px;
+    }
+    
+    .group-panel-content.expanded {
+        padding: 15px;
     }
 }
