@@ -107,3 +107,11 @@
     background-color: #ffcccb !important; /* 群組標記的顏色 */
     color: black !important;
 } 
+
+.error-message {
+    color: #db2828;
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #ffe8e6;
+    border-radius: 4px;
+}

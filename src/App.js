@@ -1,3 +1,4 @@
+// App.js
 import { BrowserRouter } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import Header from './Header';
@@ -8,6 +9,7 @@ import './App.css';
 
 function App() {
     const [user, setUser] = useState(null);
+    const [selectedMember, setSelectedMember] = useState(null);
 
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -16,13 +18,23 @@ function App() {
         return () => unsubscribe();
     }, []);
 
+    useEffect(() => {
+        const handleReturn = () => setSelectedMember(null);
+        window.addEventListener('returnToMyCalendar', handleReturn);
+        return () => window.removeEventListener('returnToMyCalendar', handleReturn);
+    }, []);
+
+    const handleMemberSelect = (memberId) => {
+        setSelectedMember(memberId);
+    };
+
     return (
         <BrowserRouter>
             <Header />
             {user ? (
                 <div className="main-content">
-                    <GroupPanel />
-                    <UserCalendar />
+                    <GroupPanel onMemberSelect={handleMemberSelect} />
+                    <UserCalendar selectedMember={selectedMember} />
                 </div>
             ) : (
                 <div style={{ textAlign: 'center', marginTop: '50px' }}>

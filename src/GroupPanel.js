@@ -1,34 +1,45 @@
+// GroupPanel.js
 import { useState, useEffect } from 'react';
 import { auth, db } from './firebase';
-import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import './GroupPanel.css';
-import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
 
-function GroupPanel() {
+function GroupPanel({ onMemberSelect }) {
     const [newGroupCode, setNewGroupCode] = useState('');
     const [joinGroupCode, setJoinGroupCode] = useState('');
     const [userGroups, setUserGroups] = useState([]);
     const [groupMembersCount, setGroupMembersCount] = useState({});
     const [expandedGroup, setExpandedGroup] = useState(null);
-    const [groupMembers, setGroupMembers] = useState({});
-    const [markedDates, setMarkedDates] = useState({});
-    const [date, setDate] = useState(new Date());
-    const [isRangeSelectionMode, setIsRangeSelectionMode] = useState(false);
-    const [selectedRange, setSelectedRange] = useState(null);
+    const [groupMembersData, setGroupMembersData] = useState({}); // 改為儲存完整數據
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [isJoinGroupExpanded, setIsJoinGroupExpanded] = useState(false);
     const [isCreateGroupExpanded, setIsCreateGroupExpanded] = useState(false);
     const [newGroupName, setNewGroupName] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (auth.currentUser) {
+            initializeUserIfNeeded();
             loadUserGroups();
         }
-    }, []);
+    }, [auth.currentUser]);
+
+    const initializeUserIfNeeded = async () => {
+        if (!auth.currentUser) return;
+        const userDocRef = doc(db, 'users', auth.currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (!userDoc.exists()) {
+            await setDoc(userDocRef, {
+                groups: [],
+                createdAt: new Date().toISOString(),
+            }, { merge: true });
+        }
+    };
 
     const loadUserGroups = async () => {
+        if (!auth.currentUser) return;
+
         const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
         if (userDoc.exists() && userDoc.data().groups) {
             const groups = userDoc.data().groups;
@@ -40,12 +51,29 @@ function GroupPanel() {
                 if (groupDoc.exists()) {
                     const members = groupDoc.data().members || [];
                     membersCount[group] = members.length;
-                    membersData[group] = members;
+                    // 獲取每個成員的暱稱
+                    const memberDetails = {};
+                    for (const memberId of members) {
+                        const memberDoc = await getDoc(doc(db, 'users', memberId));
+                        memberDetails[memberId] = memberDoc.exists() ? 
+                            (memberDoc.data().nickname || memberId) : memberId;
+                    }
+                    membersData[group] = memberDetails;
                 }
             }
             setGroupMembersCount(membersCount);
-            setGroupMembers(membersData);
+            setGroupMembersData(membersData);
         }
+    };
+
+    const handleMemberClick = (memberId) => {
+        if (onMemberSelect) {
+            onMemberSelect(memberId);
+        }
+    };
+
+    const toggleGroupExpand = (groupCode) => {
+        setExpandedGroup(expandedGroup === groupCode ? null : groupCode);
     };
 
     const createGroup = async (e) => {
@@ -54,30 +82,29 @@ function GroupPanel() {
             setError('請輸入群組名稱');
             return;
         }
-
+        setIsLoading(true);
         try {
+            await initializeUserIfNeeded();
             const groupDoc = await getDoc(doc(db, 'groups', newGroupName));
             if (groupDoc.exists()) {
                 setError('此群組名稱已被使用');
                 return;
             }
-
             await setDoc(doc(db, 'groups', newGroupName), {
                 createdBy: auth.currentUser.uid,
                 members: [auth.currentUser.uid],
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
             });
-
             await updateDoc(doc(db, 'users', auth.currentUser.uid), {
-                groups: arrayUnion(newGroupName)
+                groups: arrayUnion(newGroupName),
             });
-
             setSuccess('群組創建成功！');
             setNewGroupName('');
             loadUserGroups();
         } catch (error) {
-            setError('創建群組時發生錯誤');
-            console.error(error);
+            setError('創建群組時發生錯誤: ' + error.message);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -87,75 +114,41 @@ function GroupPanel() {
             setError('請輸入群組代碼');
             return;
         }
-
+        setIsLoading(true);
         try {
+            await initializeUserIfNeeded();
             const groupDoc = await getDoc(doc(db, 'groups', joinGroupCode));
             if (!groupDoc.exists()) {
                 setError('找不到此群組');
                 return;
             }
-
             if (groupDoc.data().members.includes(auth.currentUser.uid)) {
                 setError('您已經是此群組的成員');
                 return;
             }
-
             await updateDoc(doc(db, 'groups', joinGroupCode), {
-                members: arrayUnion(auth.currentUser.uid)
+                members: arrayUnion(auth.currentUser.uid),
             });
-
             await updateDoc(doc(db, 'users', auth.currentUser.uid), {
-                groups: arrayUnion(joinGroupCode)
+                groups: arrayUnion(joinGroupCode),
             });
-
             setSuccess('成功加入群組！');
             setJoinGroupCode('');
             loadUserGroups();
         } catch (error) {
-            setError('加入群組時發生錯誤');
-            console.error(error);
+            setError('加入群組時發生錯誤: ' + error.message);
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    const toggleGroupExpand = (groupCode) => {
-        setExpandedGroup(expandedGroup === groupCode ? null : groupCode);
-    };
-
-    const tileClassName = ({ date }) => {
-        const dateStr = date.toLocaleDateString();
-        return markedDates[dateStr] ? 'marked-date' : '';
-    };
-
-    const handleRangeChange = (value) => {
-        if (!isRangeSelectionMode) return;
-        setSelectedRange(value);
-    };
-
-    const toggleRangeSelectionMode = () => {
-        setIsRangeSelectionMode(!isRangeSelectionMode);
-        if (!isRangeSelectionMode) {
-            setSelectedRange(null);
-        }
-    };
-
-    const handleMemberClick = (member) => {
-        // Call the function to handle member click
-        // This function should be passed down to UserCalendar or handled via context
-        // For example, you can use a callback prop to notify UserCalendar
-    };
-
-    const toggleJoinGroupExpansion = () => {
-        setIsJoinGroupExpanded(!isJoinGroupExpanded);
-    };
-
-    const toggleCreateGroupExpansion = () => {
-        setIsCreateGroupExpanded(!isCreateGroupExpanded);
-    };
+    const toggleJoinGroupExpansion = () => setIsJoinGroupExpanded(!isJoinGroupExpanded);
+    const toggleCreateGroupExpansion = () => setIsCreateGroupExpanded(!isCreateGroupExpanded);
 
     return (
         <div className="group-panel">
             <h2>群組管理</h2>
-            
+            {isLoading && <div className="loading">加載中...</div>}
             {error && <div className="error-message">{error}</div>}
             {success && <div className="success-message">{success}</div>}
 
@@ -171,11 +164,12 @@ function GroupPanel() {
                             onChange={(e) => setJoinGroupCode(e.target.value)}
                             placeholder="輸入群組代碼"
                         />
-                        <button type="submit">加入群組</button>
+                        <button type="submit" disabled={isLoading}>加入群組</button>
                     </form>
                 )}
             </div>
-
+            
+            {/*
             <div className="group-section">
                 <h3 onClick={toggleCreateGroupExpansion} style={{ cursor: 'pointer' }}>
                     創建新群組 {isCreateGroupExpanded ? ' ▲' : ' ▼'}
@@ -188,10 +182,11 @@ function GroupPanel() {
                             onChange={(e) => setNewGroupName(e.target.value)}
                             placeholder="輸入新群組名稱"
                         />
-                        <button type="submit">創建群組</button>
+                        <button type="submit" disabled={isLoading}>創建群組</button>
                     </form>
                 )}
             </div>
+            */}
 
             <div className="group-section">
                 <h3>我的群組</h3>
@@ -205,9 +200,13 @@ function GroupPanel() {
                                 </div>
                                 {expandedGroup === group && (
                                     <div className="group-members">
-                                        {groupMembers[group].map(member => (
-                                            <div key={member} className="group-member">
-                                                {member}
+                                        {Object.entries(groupMembersData[group] || {}).map(([memberId, nickname]) => (
+                                            <div
+                                                key={memberId}
+                                                className="group-member"
+                                                onClick={() => handleMemberClick(memberId)}
+                                            >
+                                                {nickname} {/* 顯示暱稱 */}
                                             </div>
                                         ))}
                                     </div>

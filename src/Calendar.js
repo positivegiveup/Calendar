@@ -1,60 +1,66 @@
+// UserCalendar.js
 import { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { auth, db } from './firebase';
-import { doc, setDoc, getDoc, getDocs, collection } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import './Calendar.css';
 
-function UserCalendar() {
+function UserCalendar({ selectedMember }) {
     const [date, setDate] = useState(new Date());
     const [markedDates, setMarkedDates] = useState({});
     const [lastClickTime, setLastClickTime] = useState(null);
     const [selectedRange, setSelectedRange] = useState(null);
     const [statistics, setStatistics] = useState(null);
     const [isRangeSelectionMode, setIsRangeSelectionMode] = useState(false);
-    const [selectedMember, setSelectedMember] = useState(null);
+    const [error, setError] = useState('');
+    const [currentNickname, setCurrentNickname] = useState('');
+
+    // 是否為自己的月曆
+    const isOwnCalendar = !selectedMember || selectedMember === auth.currentUser?.uid;
 
     useEffect(() => {
         loadMarkedDates();
-    }, []);
+    }, [selectedMember]);
 
     const loadMarkedDates = async () => {
-        if (!auth.currentUser) return;
-        
-        const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
-        if (userDoc.exists()) {
-            setMarkedDates(userDoc.data().markedDates || {});
+        if (!auth.currentUser) {
+            setError('請先登錄');
+            return;
         }
-    };
 
-    const loadMemberMarkedDates = async (member) => {
-        const memberDoc = await getDoc(doc(db, 'users', member));
-        if (memberDoc.exists() && memberDoc.data().markedDates) {
-            setMarkedDates(memberDoc.data().markedDates);
+        const userId = selectedMember || auth.currentUser.uid;
+        try {
+            const userDoc = await getDoc(doc(db, 'users', userId));
+            if (userDoc.exists()) {
+                setMarkedDates(userDoc.data().markedDates || {});
+                setCurrentNickname(userDoc.data().nickname || userId);
+                setError('');
+            } else {
+                setError('無法加載成員數據，可能數據不存在');
+            }
+        } catch (error) {
+            console.error('Error loading marked dates:', error);
+            if (error.code === 'permission-denied') {
+                setError('權限不足，無法查看此成員的月曆。請確認你與該成員在同一群組。');
+            } else {
+                setError('加載數據時發生錯誤: ' + error.message);
+            }
         }
-    };
-
-    const handleMemberClick = (member) => {
-        setSelectedMember(member);
-        // loadMemberMarkedDates(member); // Commented out to disable loading member marked dates
     };
 
     const handleDateClick = async (value) => {
-        if (isRangeSelectionMode) return;
+        if (!isOwnCalendar || isRangeSelectionMode) return; // 其他成員月曆禁用標記
 
         const currentTime = new Date().getTime();
-        
         if (lastClickTime && currentTime - lastClickTime < 300) {
             const dateStr = value.toLocaleDateString();
-
             const newMarkedDates = {
                 ...markedDates,
-                [dateStr]: !markedDates[dateStr]
+                [dateStr]: !markedDates[dateStr],
             };
-
             const userDoc = doc(db, 'users', auth.currentUser.uid);
             await setDoc(userDoc, { markedDates: newMarkedDates }, { merge: true });
-            
             setMarkedDates(newMarkedDates);
             setLastClickTime(null);
         } else {
@@ -64,34 +70,30 @@ function UserCalendar() {
 
     const calculateStatistics = (range) => {
         if (!range || !range[0] || !range[1]) return;
-
         const startDate = range[0];
         const endDate = range[1];
         let count = 0;
         let totalDays = 0;
-
         const currentDate = new Date(startDate);
         while (currentDate <= endDate) {
             const dateStr = currentDate.toLocaleDateString();
-            if (markedDates[dateStr]) {
-                count++;
-            }
+            if (markedDates[dateStr]) count++;
             totalDays++;
             currentDate.setDate(currentDate.getDate() + 1);
         }
-
         setStatistics({
             markedCount: count,
             totalDays: totalDays,
-            percentage: ((count / totalDays) * 100).toFixed(1)
+            percentage: ((count / totalDays) * 100).toFixed(1),
         });
     };
 
     const handleRangeChange = (value) => {
-        if (!isRangeSelectionMode) return;
-        setDate(value);
-        setSelectedRange(value);
-        calculateStatistics(value);
+        setDate(value); // 允許切換時間
+        if (isRangeSelectionMode) {
+            setSelectedRange(value);
+            calculateStatistics(value);
+        }
     };
 
     const toggleRangeSelectionMode = () => {
@@ -111,18 +113,21 @@ function UserCalendar() {
 
     const tileClassName = ({ date }) => {
         const dateStr = date.toLocaleDateString();
-        const isMarkedByUser = markedDates[dateStr];
+        return markedDates[dateStr] ? 'marked-date' : '';
+    };
 
-        if (isMarkedByUser) {
-            return 'marked-date'; // 用戶的標記
-        }
-        return '';
+    const returnToMyCalendar = () => {
+        window.dispatchEvent(new CustomEvent('returnToMyCalendar'));
     };
 
     return (
         <div className="calendar-container">
+            {error && <div className="error-message">{error}</div>}
+            <div className="calendar-header">
+                <h2>正在觀看 {currentNickname} 的月曆</h2>
+            </div>
             <div className="calendar-controls">
-                <button 
+                <button
                     className={`control-button ${isRangeSelectionMode ? 'active' : ''}`}
                     onClick={toggleRangeSelectionMode}
                 >
@@ -133,16 +138,21 @@ function UserCalendar() {
                         清除選擇
                     </button>
                 )}
+                {selectedMember && selectedMember !== auth.currentUser?.uid && (
+                    <button className="control-button" onClick={returnToMyCalendar}>
+                        回到我的月曆
+                    </button>
+                )}
             </div>
-            
+
             <Calendar
                 onChange={handleRangeChange}
                 value={date}
                 onClickDay={handleDateClick}
                 tileClassName={tileClassName}
-                selectRange={isRangeSelectionMode}
+                selectRange={isRangeSelectionMode} // 所有月曆啟用區間選擇
             />
-            
+
             {statistics && (
                 <div className="statistics-panel">
                     <h3>區間統計</h3>
