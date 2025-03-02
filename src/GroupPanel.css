@@ -1,10 +1,9 @@
+/* GroupPanel.css */
 .group-panel {
     background: white;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    width: 300px;
-    margin-right: 20px;
 }
 
 .group-section {
@@ -85,4 +84,49 @@
 
 .group-member:hover {
     background-color: #e0e0e0;
+}
+
+/* Desktop styles */
+@media screen and (min-width: 768px) {
+    .group-panel {
+        width: 300px;
+        margin-right: 20px;
+    }
+    
+    .main-content {
+        display: flex;
+        padding: 20px;
+        gap: 20px;
+    }
+}
+
+/* Mobile styles */
+@media screen and (max-width: 767px) {
+    .group-panel {
+        width: 100%;
+        margin: 0 0 20px 0;
+    }
+    
+    .main-content {
+        display: flex;
+        flex-direction: column;
+        padding: 10px;
+        gap: 15px;
+    }
+    
+    .group-section input {
+        padding: 6px;
+    }
+    
+    .group-section button {
+        padding: 6px;
+    }
+    
+    .group-item {
+        padding: 8px;
+    }
+    
+    .group-member {
+        padding: 4px;
+    }
 }

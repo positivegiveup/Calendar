@@ -89,10 +89,21 @@ function UserCalendar({ selectedMember }) {
     };
 
     const handleRangeChange = (value) => {
-        setDate(value); // 允許切換時間
         if (isRangeSelectionMode) {
-            setSelectedRange(value);
-            calculateStatistics(value);
+            if (Array.isArray(value)) {
+                // 當完成區間選擇時
+                setSelectedRange(value);
+                calculateStatistics(value);
+                // 確保使用新的 Date 物件來觸發更新
+                const endDate = new Date(value[1]);
+                setDate(endDate);
+            } else {
+                // 第一次點擊時
+                const newDate = new Date(value);
+                setDate(newDate);
+            }
+        } else {
+            setDate(value);
         }
     };
 
@@ -150,7 +161,7 @@ function UserCalendar({ selectedMember }) {
                 value={date}
                 onClickDay={handleDateClick}
                 tileClassName={tileClassName}
-                selectRange={isRangeSelectionMode} // 所有月曆啟用區間選擇
+                selectRange={isRangeSelectionMode}
             />
 
             {statistics && (
