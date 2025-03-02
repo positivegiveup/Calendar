@@ -15,15 +15,25 @@ function Header() {
 
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged(async (user) => {
-            setUser(user);
             if (user) {
+                setUser(user);
                 const userDocRef = doc(db, 'users', user.uid);
                 const userDoc = await getDoc(userDocRef);
-                if (!userDoc.exists() || !userDoc.data().nickname) {
-                    setIsNicknameModalOpen(true); // 第一次登入時顯示模態框
+                
+                if (!userDoc.exists()) {
+                    // 新用戶：設置基本資料但不設置暱稱
+                    await setDoc(userDocRef, {
+                        createdAt: new Date().toISOString()
+                    });
+                    setIsNicknameModalOpen(true);
+                } else if (!userDoc.data().nickname) {
+                    setIsNicknameModalOpen(true);
                 } else {
-                    setCurrentNickname(userDoc.data().nickname); // 載入現有暱稱
+                    setCurrentNickname(userDoc.data().nickname);
                 }
+            } else {
+                setUser(null);
+                setCurrentNickname('');
             }
         });
         return () => unsubscribe();
@@ -48,10 +58,18 @@ function Header() {
 
     const saveNickname = async () => {
         if (!nickname.trim()) return;
-        const userDocRef = doc(db, 'users', auth.currentUser.uid);
-        await setDoc(userDocRef, { nickname: nickname.trim() }, { merge: true });
-        setCurrentNickname(nickname.trim()); // 更新顯示的暱稱
-        setIsNicknameModalOpen(false);
+        
+        try {
+            const userDocRef = doc(db, 'users', auth.currentUser.uid);
+            await setDoc(userDocRef, { 
+                nickname: nickname.trim() 
+            }, { merge: true });
+            
+            // 重新載入頁面
+            window.location.reload();
+        } catch (error) {
+            console.error("Error saving nickname:", error);
+        }
     };
 
     const openNicknameModal = () => {
@@ -96,7 +114,7 @@ function Header() {
                 closeOnDimmerClick={false}
                 closeOnEscape={false}
             >
-                <Modal.Header>設置您的暱稱</Modal.Header>
+                <Modal.Header>請設置您的暱稱</Modal.Header>
                 <Modal.Content>
                     <Input
                         placeholder="輸入您的暱稱"

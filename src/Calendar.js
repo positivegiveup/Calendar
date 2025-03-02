@@ -36,9 +36,7 @@ function UserCalendar({ selectedMember }) {
                 setMarkedDates(userDoc.data().markedDates || {});
                 setCurrentNickname(userDoc.data().nickname || userId);
                 setError('');
-            } else {
-                setError('無法加載成員數據，可能數據不存在');
-            }
+            } 
         } catch (error) {
             console.error('Error loading marked dates:', error);
             if (error.code === 'permission-denied') {
@@ -131,6 +129,11 @@ function UserCalendar({ selectedMember }) {
         window.dispatchEvent(new CustomEvent('returnToMyCalendar'));
     };
 
+    // 添加自定義日期格式化函數
+    const formatDay = (locale, date) => {
+        return date.getDate().toString();
+    };
+
     return (
         <div className="calendar-container">
             {error && <div className="error-message">{error}</div>}
@@ -162,6 +165,7 @@ function UserCalendar({ selectedMember }) {
                 onClickDay={handleDateClick}
                 tileClassName={tileClassName}
                 selectRange={isRangeSelectionMode}
+                formatDay={formatDay}
             />
 
             {statistics && (
