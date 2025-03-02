@@ -1,0 +1,109 @@
+.calendar-container {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.react-calendar {
+    width: 600px;
+    max-width: 100%;
+    background: white;
+    border: 1px solid #a0a096;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-family: Arial, Helvetica, sans-serif;
+    line-height: 1.125em;
+    padding: 1em;
+}
+
+.marked-date {
+    background-color: #ffeb3b !important; /* 標註的顏色 */
+    color: black !important;
+}
+
+.marked-date:hover {
+    background-color: #ffd700 !important;
+}
+
+.react-calendar__tile {
+    padding: 1em 0.5em;
+    transition: all 0.2s;
+}
+
+.react-calendar__tile:hover {
+    background-color: #f0f0f0;
+}
+
+.react-calendar__tile--now {
+    background: #e6f4ff !important;
+}
+
+.statistics-panel {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    width: 600px;
+    max-width: 100%;
+    margin-top: 20px;
+}
+
+.statistics-panel h3 {
+    margin-top: 0;
+    color: #333;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 10px;
+}
+
+.statistics-panel p {
+    margin: 10px 0;
+    color: #666;
+    font-size: 16px;
+}
+
+/* 當滑鼠選擇範圍時的樣式 */
+.react-calendar__tile--rangeStart,
+.react-calendar__tile--rangeEnd {
+    background-color: #2185d0 !important;
+    color: white !important;
+}
+
+.react-calendar__tile--rangeBetween {
+    background-color: #e6f3ff !important;
+}
+
+.calendar-controls {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.control-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    background-color: #2185d0;
+    color: white;
+}
+
+.control-button:hover {
+    background-color: #1678c2;
+}
+
+.control-button.active {
+    background-color: #db2828;
+}
+
+.control-button.active:hover {
+    background-color: #d01919;
+}
+
+.group-marked-date {
+    background-color: #ffcccb !important; /* 群組標記的顏色 */
+    color: black !important;
+} 
